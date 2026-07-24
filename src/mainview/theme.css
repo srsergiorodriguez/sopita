@@ -1,0 +1,174 @@
+/* Sans-Serif font */
+@font-face {
+  font-family: 'Outfit';
+  src: url('./assets/Outfit-VariableFont_wght.ttf') format('truetype');
+  font-weight: 100 900;
+  font-style: normal;
+}
+
+/* Monospace font */
+@font-face {
+  font-family: 'Atkinson Hyperlegible';
+  src: url('./assets/AtkinsonHyperlegibleMono-VariableFont_wght.ttf') format('truetype');
+  font-weight: 100 900;
+  font-style: normal;
+}
+
+* {
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-user-drag: none;
+}
+
+:root {
+  --bg-main: #181818;
+  --bg-panel: #242424;
+  
+  /* Single source of truth for the accent color */
+  --accent-rgb: 227, 5, 75;
+  --accent: rgb(var(--accent-rgb));
+  --accent-hover: color-mix(in srgb, var(--accent), white 15%);
+
+  --radius-sm: 2px;
+  --radius-md: 4px;
+  --border-subtle: 1px solid rgba(164, 176, 190, 0.15); /* Faint line for internal dividers */
+  --border-strong: 1px solid var(--bg-panel); /* Standard panel borders */
+  --shadow-modal: none; /* 0 8px 32px rgba(0, 0, 0, 0.6); */
+  
+  --text-main: #f1f2f6;
+  --text-muted: #a4b0be;
+  
+  --font-sans: 'Outfit', system-ui, -apple-system, sans-serif;
+  --font-mono: 'Atkinson Hyperlegible', ui-monospace, 'Courier New', monospace;
+}
+
+:root[data-theme="light"] {
+  --bg-main: #f4f4f5;
+  --bg-panel: #ffffff;
+  --text-main: #18181b;
+  --text-muted: #71717a;
+  --border-strong: #d4d4d8;
+  --border-subtle: #e4e4e7;
+}
+
+body {
+  background-color: var(--bg-main);
+  color: var(--text-main);
+  font-family: var(--font-sans);
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+}
+
+/* --- GLOBAL UI COMPONENTS --- */
+
+/* Base Button */
+.btn {
+  font-family: var(--font-mono);
+  font-size: 0.9rem;
+  padding: 0.5rem 1rem;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: all 0.1s ease;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+}
+
+/* Size modifier for the Splash screen */
+.btn-lg {
+  padding: 1rem 2rem;
+  font-size: 1.1rem;
+}
+
+/* Primary/Accent Button (Export, Load) */
+.btn-primary {
+  background: rgba(var(--accent-rgb), 0.1);
+  color: var(--accent);
+  border: 1px solid rgba(var(--accent-rgb), 0.3);
+}
+
+.btn-primary:hover {
+  background: var(--accent);
+  color: var(--bg-main);
+  border-color: var(--accent);
+}
+
+/* Standard Panel Button */
+.btn-panel {
+  background: var(--bg-panel);
+  color: var(--text-main);
+  border: 1px solid var(--text-muted);
+}
+
+.btn-panel:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+/* Ghost/Cancel Button */
+.btn-ghost {
+  background: transparent;
+  border: 1px solid transparent;
+  color: var(--text-muted);
+}
+
+.btn-ghost:hover {
+  color: var(--text-main);
+  border-color: var(--text-muted);
+}
+
+/* Select Dropdowns */
+.ui-select {
+  background: var(--bg-main);
+  color: var(--text-main);
+  border: var(--border-subtle);
+  padding: 0.5rem;
+  border-radius: var(--radius-sm);
+  font-family: var(--font-mono);
+  font-size: 0.9rem;
+  outline: none;
+  cursor: pointer;
+  width: 100%;
+}
+
+.ui-select:focus {
+  border-color: var(--accent);
+}
+
+/* Unified Toggle / Radio Bars */
+.ui-toggle-bar {
+  display: flex;
+  background: var(--bg-panel);
+  border-radius: var(--radius-sm);
+  padding: 2px;
+  border: var(--border-strong);
+}
+
+.ui-toggle-btn {
+  flex: 1;
+  text-align: center;
+  padding: 0.5rem 1rem;
+  font-size: 0.85rem;
+  color: var(--text-muted);
+  cursor: pointer;
+  border-radius: var(--radius-sm);
+  transition: all 0.1s ease;
+  background: transparent;
+  border: none;
+  font-family: var(--font-mono);
+}
+
+.ui-toggle-btn input[type="radio"] {
+  display: none;
+}
+
+.ui-toggle-btn.active {
+  background: var(--bg-main);
+  color: var(--accent);
+}
+
+.ui-toggle-btn:hover:not(.active) {
+  color: var(--text-main);
+}
