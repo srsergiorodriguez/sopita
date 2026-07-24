@@ -1,10 +1,9 @@
 name: Cross-Compile & Release
 
-# 1. TRIGGERS
 on:
-  # Allows to click "Run workflow" manually from the Actions tab for testing
+  # Allows you to click "Run workflow" manually from the Actions tab for testing
   workflow_dispatch: 
-  # Automatically runs when we push a tag like "v1.0.0"
+  # Automatically runs when you push a tag like "v1.0.0"
   push:
     tags:
       - 'v*'
@@ -12,10 +11,9 @@ on:
 jobs:
   build:
     name: Build on ${{ matrix.os-name }}
-    # 2. RUNNER MATRIX
-    # We use specific runner versions to target different architectures
     runs-on: ${{ matrix.runner }}
     strategy:
+      fail-fast: false # Prevents one OS failure from canceling the others
       matrix:
         include:
           - os-name: Windows
@@ -25,11 +23,9 @@ jobs:
             runner: ubuntu-latest
             artifact-name: sopita-linux
           - os-name: Mac-Intel
-            # macos-13 runs on Intel processors (x64)
             runner: macos-13
             artifact-name: sopita-mac-intel
           - os-name: Mac-Silicon
-            # macos-latest (macos-14+) runs on Apple Silicon (ARM64)
             runner: macos-latest
             artifact-name: sopita-mac-silicon
 
@@ -37,30 +33,30 @@ jobs:
       - name: Checkout Code
         uses: actions/checkout@v4
 
-      # 3. SETUP BUN ENVIRONMENT
       - name: Install Bun
-        uses: oven-sh/setup-bun@v1
+        uses: oven-sh/setup-bun@v2 # Upgraded to v2 to fix Node 20 warnings
         with:
           bun-version: latest
+
+      # Install Linux build essentials and webview dependencies
+      - name: Install Linux Dependencies
+        if: runner.os == 'Linux'
+        run: sudo apt-get update && sudo apt-get install -y build-essential pkg-config libwebkit2gtk-4.1-dev
 
       - name: Install Dependencies
         run: bun install
 
-      # 4. EXECUTE BUILD
-      # (Ensure your package.json has a "build" script that triggers Electrobun's compiler)
+      # Uses your specific stable build script
       - name: Build Application
-        run: bun run build 
+        run: bun run build:stable 
 
-      # 5. UPLOAD TEMPORARY ARTIFACTS
       # Grabs the compiled output so it can be passed to the Release job.
-      # Note: Adjust the 'path' if your specific Electrobun config outputs to a different folder.
       - name: Upload Build Artifact
         uses: actions/upload-artifact@v4
         with:
           name: ${{ matrix.artifact-name }}
           path: build/ 
 
-  # 6. PUBLISH RELEASE (Only runs if a 'v*' tag was pushed)
   release:
     name: Create GitHub Release
     needs: build
