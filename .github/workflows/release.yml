@@ -1,0 +1,80 @@
+name: Cross-Compile & Release
+
+# 1. TRIGGERS
+on:
+  # Allows to click "Run workflow" manually from the Actions tab for testing
+  workflow_dispatch: 
+  # Automatically runs when we push a tag like "v1.0.0"
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  build:
+    name: Build on ${{ matrix.os-name }}
+    # 2. RUNNER MATRIX
+    # We use specific runner versions to target different architectures
+    runs-on: ${{ matrix.runner }}
+    strategy:
+      matrix:
+        include:
+          - os-name: Windows
+            runner: windows-latest
+            artifact-name: sopita-windows
+          - os-name: Linux
+            runner: ubuntu-latest
+            artifact-name: sopita-linux
+          - os-name: Mac-Intel
+            # macos-13 runs on Intel processors (x64)
+            runner: macos-13
+            artifact-name: sopita-mac-intel
+          - os-name: Mac-Silicon
+            # macos-latest (macos-14+) runs on Apple Silicon (ARM64)
+            runner: macos-latest
+            artifact-name: sopita-mac-silicon
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      # 3. SETUP BUN ENVIRONMENT
+      - name: Install Bun
+        uses: oven-sh/setup-bun@v1
+        with:
+          bun-version: latest
+
+      - name: Install Dependencies
+        run: bun install
+
+      # 4. EXECUTE BUILD
+      # (Ensure your package.json has a "build" script that triggers Electrobun's compiler)
+      - name: Build Application
+        run: bun run build 
+
+      # 5. UPLOAD TEMPORARY ARTIFACTS
+      # Grabs the compiled output so it can be passed to the Release job.
+      # Note: Adjust the 'path' if your specific Electrobun config outputs to a different folder.
+      - name: Upload Build Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.artifact-name }}
+          path: build/ 
+
+  # 6. PUBLISH RELEASE (Only runs if a 'v*' tag was pushed)
+  release:
+    name: Create GitHub Release
+    needs: build
+    if: startsWith(github.ref, 'refs/tags/v')
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download all Build Artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+
+      # Zips the folders up and attaches them to a new GitHub Release page
+      - name: Publish Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: artifacts/**/*
+          generate_release_notes: true

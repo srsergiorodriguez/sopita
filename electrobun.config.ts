@@ -19,7 +19,7 @@ export default {
 			icons: "assets/sopitaIcon.iconset",
 		},
 		linux: {
-			bundleCEF: false,
+			bundleCEF: true,
 			icon: "assets/sopitaIcon.png"
 		},
 		win: {
