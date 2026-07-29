@@ -13,6 +13,11 @@
   let height = 0;
   let shapeColor = '#000';
 
+  // Delta Time Tracking:
+  // Stores the high-resolution timestamp of the previous frame to calculate
+  // elapsed time, ensuring frame-rate independent animations across high-refresh monitors.
+  let lastTime = 0;
+
   // Theme Synchronization:
   // This $effect reads appState.theme implicitly. Whenever the theme toggles,
   // it re-evaluates the CSS variables applied to the root document and updates
@@ -72,15 +77,25 @@
 
   // The core animation loop. 
   // Clears the canvas entirely every frame and redraws all shapes at their newly calculated positions.
-  function drawShapes(ctx) {
+  // Now receives a timestamp argument provided automatically by requestAnimationFrame.
+  function drawShapes(ctx, timestamp) {
+    // Delta Time Normalization:
+    // Decouples animation velocity from the monitor refresh rate (60Hz vs 120Hz/144Hz+).
+    // We normalize against a standard 60fps baseline (~16.67ms per frame).
+    if (!lastTime) lastTime = timestamp;
+    const deltaTime = timestamp - lastTime;
+    lastTime = timestamp;
+    const timeScale = deltaTime / 16.67;
+
     ctx.clearRect(0, 0, width, height); 
 
     ctx.strokeStyle = shapeColor;
     ctx.lineWidth = 2; 
 
     shapes.forEach(shape => {
-      shape.y += shape.speed;
-      shape.rotation += shape.rotSpeed;
+      // Scale movement and rotation by timeScale to maintain identical perceived speed on any display
+      shape.y += shape.speed * timeScale;
+      shape.rotation += shape.rotSpeed * timeScale;
 
       // Boundary detection: recycle shape objects to maintain memory performance 
       // instead of instantiating new objects for the garbage collector to clean up.
@@ -111,8 +126,8 @@
       ctx.restore();
     });
 
-    // Request the browser to schedule the next frame perfectly synchronized with the display's refresh rate.
-    animFrame = requestAnimationFrame(() => drawShapes(ctx));
+    // Request the browser to schedule the next frame, passing the new timestamp into the callback.
+    animFrame = requestAnimationFrame((newTimestamp) => drawShapes(ctx, newTimestamp));
   }
 
   onMount(() => {
@@ -136,7 +151,7 @@
     });
 
     resizeObserver.observe(container);
-    animFrame = requestAnimationFrame(() => drawShapes(ctx));
+    animFrame = requestAnimationFrame((timestamp) => drawShapes(ctx, timestamp));
 
     // The cleanup function returned from onMount.
     // Svelte guarantees this runs when the component is destroyed (e.g., when an audio file loads), 

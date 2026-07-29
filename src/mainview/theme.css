@@ -20,6 +20,10 @@
   -webkit-user-drag: none;
 }
 
+*, *::before, *::after {
+  box-sizing: border-box;
+}
+
 :root {
   --bg-main: #181818;
   --bg-panel: #242424;
@@ -58,6 +62,8 @@ body {
   margin: 0;
   padding: 0;
   overflow: hidden;
+  width: 100vw;
+  height: 100vh;
 }
 
 /* --- GLOBAL UI COMPONENTS --- */

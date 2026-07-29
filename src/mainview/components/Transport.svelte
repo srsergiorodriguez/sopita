@@ -7,7 +7,15 @@
   // Immediately halts any running audio and cleans up the visual playhead.
   function stopAudio() {
     if (activeSource) {
-      try { activeSource.stop(); } catch(e) {}
+      try { 
+        // Web Audio Choke Fix (Race Condition Defense): 
+        // In Chromium/V8 on Windows, calling stop() triggers onended asynchronously.
+        // If a new sound is triggered immediately, an orphaned onended callback from the previous sound 
+        // could execute *after* the new node was assigned, wiping out activeSource and breaking choking.
+        // We explicitly detach the listener before stopping.
+        activeSource.onended = null;
+        activeSource.stop(); 
+      } catch(e) {}
       activeSource.disconnect();
       activeSource = null;
     }
@@ -45,9 +53,10 @@
     // Web Audio API AudioBufferSourceNodes are strictly single-use (one-shot) items.
     // They cannot be paused or restarted. To replay a sound, we must instantiate a brand new node.
     // This is incredibly cheap computationally and guarantees zero latency.
-    activeSource = audioCtx.createBufferSource();
-    activeSource.buffer = buffer;
-    activeSource.connect(fadeNode);
+    const sourceNode = audioCtx.createBufferSource();
+    activeSource = sourceNode; // Store instance reference for active tracking and choking
+    sourceNode.buffer = buffer;
+    sourceNode.connect(fadeNode);
 
     // AudioParam Automation:
     // We schedule volume changes directly on the audio thread's internal clock (now).
@@ -74,7 +83,7 @@
     }
 
     // Tell the audio thread to begin reading the buffer at 'start' for exactly 'duration' seconds.
-    activeSource.start(now, start, duration);
+    sourceNode.start(now, start, duration);
     appState.isPlaying = true;
 
     // UI Syncing:
@@ -95,11 +104,17 @@
 
     // The 'onended' event fires natively when the buffer finishes playing its scheduled duration,
     // allowing us to cleanly reset our UI state and clean up the animation loop.
-    activeSource.onended = () => {
-      appState.isPlaying = false;
-      activeSource = null;
-      cancelAnimationFrame(animFrame);
-      wavesurfer.setTime(start);
+    sourceNode.onended = () => {
+      // Node Identity Guard:
+      // Only clean up UI state if THIS specific source node is still the currently active sound.
+      // If a subsequent user trigger choked this node, activeSource will point to the new node,
+      // and this cleanup logic will safely step aside without wiping the new sound's state.
+      if (activeSource === sourceNode) {
+        appState.isPlaying = false;
+        activeSource = null;
+        cancelAnimationFrame(animFrame);
+        wavesurfer.setTime(start);
+      }
     };
   }
 
@@ -142,6 +157,11 @@
   }
 
   function handleKeydown(e) {
+    // OS Keyboard Auto-Repeat Filter:
+    // Windows auto-repeats held keys (firing dozens of keydown events per second), whereas WebKit behaves differently.
+    // We ignore auto-repeated events to ensure holding Spacebar behaves like a clean single trigger.
+    if (e.repeat) return;
+
     if (e.code === 'Space') {
       e.preventDefault(); 
       if (e.shiftKey) {
@@ -156,9 +176,15 @@
 <svelte:window onkeydown={handleKeydown} />
 
 <div class="transport-container">
+  <!-- 
+    DOM Focus Clearing (e.currentTarget.blur()):
+    In Chromium-based WebViews (like Edge WebView2 on Windows), clicking a button leaves native focus on it.
+    If the user later presses Spacebar, Chromium fires BOTH the button's native click AND the window's keydown,
+    causing play/stop to instantly toggle/cancel itself. Calling blur() drops button focus immediately.
+  -->
   <button 
     class="btn play-all-btn" 
-    onclick={playAll}
+    onclick={(e) => { playAll(); e.currentTarget.blur(); }}
     disabled={!appState.buffer}
     title="Play All / Stop (Shift + Space)"
   >
@@ -178,7 +204,7 @@
   <button 
     class="btn play-btn" 
     class:active={appState.isPlaying} 
-    onclick={triggerPlay}
+    onclick={(e) => { triggerPlay(); e.currentTarget.blur(); }}
     disabled={!appState.buffer}
     title="Trigger Selection (Space)"
   >
