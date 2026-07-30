@@ -5,6 +5,8 @@ import { join, parse } from "path";
 const DEV_SERVER_PORT = 5173;
 const DEV_SERVER_URL = `http://localhost:${DEV_SERVER_PORT}`;
 
+const isWindows = process.platform === "win32";
+
 // --- IPC Bridge / RPC Definition ---
 // In Electrobun, the frontend Webview and the backend Bun process are completely isolated.
 // BrowserView.defineRPC establishes a strictly typed Inter-Process Communication (IPC) bridge,
@@ -118,8 +120,8 @@ const mainWindow = new BrowserWindow({
   title: "Sopita",
   url,
   frame: {
-    width: 900,
-    height: 620,
+    width: isWindows ? 916 : 900,
+    height: isWindows ? 659 : 620,
     x: 200, // Initial X coordinate on the screen
     y: 200, // Initial Y coordinate on the screen
   },
@@ -129,7 +131,7 @@ const mainWindow = new BrowserWindow({
     Titled: true,
     Closable: true,
     Miniaturizable: true,
-    Resizable: false, // Prevents window resizing, simplifying CSS layouts for fixed-size audio UIs
+    Resizable: false,
     UnifiedTitleAndToolbar: false,
     FullScreen: false,
     FullSizeContentView: false,

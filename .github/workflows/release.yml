@@ -46,11 +46,33 @@ jobs:
       - name: Install Dependencies
         run: bun install
 
-      # Uses your specific stable build script
+      # Uses your specific stable build script[cite: 1]
       - name: Build Application
         run: bun run build:stable 
 
-      # Grabs the compiled output so it can be passed to the Release job.
+      # Install rcedit globally to bypass the Electrobun framework bug
+      - name: Install rcedit (Windows)
+        if: runner.os == 'Windows'
+        run: npm install -g rcedit
+
+      # Forcibly inject the icon into both executables
+      - name: Inject Icon (Windows)
+        if: runner.os == 'Windows'
+        run: |
+          rcedit "build\stable-win-x64\Sopita\launcher.exe" --set-icon "assets\sopitaIcon.ico"
+          rcedit "build\stable-win-x64\Sopita\bun.exe" --set-icon "assets\sopitaIcon.ico"
+
+      # Locates the .app bundle and applies a local, anonymous signature so it opens on macOS
+      - name: Ad-Hoc Sign macOS Binary
+        if: runner.os == 'macOS'
+        run: find build -name "*.app" -exec codesign --force --deep -s - {} \;
+
+      # Zips the raw Windows executable folder to bypass the broken installer
+      - name: Zip Windows Build
+        if: runner.os == 'Windows'
+        run: Compress-Archive -Path build\stable-win-x64\Sopita\* -DestinationPath build\Sopita-Windows.zip
+
+      # Grabs the compiled output so it can be passed to the Release job.[cite: 1]
       - name: Upload Build Artifact
         uses: actions/upload-artifact@v4
         with:
@@ -60,7 +82,7 @@ jobs:
   release:
     name: Create GitHub Release
     needs: build
-    if: startsWith(github.ref, 'refs/tags/v')
+    if: startsWith(github.ref, 'refs/tags/v') #[cite: 1]
     runs-on: ubuntu-latest
     steps:
       - name: Download all Build Artifacts
@@ -68,9 +90,9 @@ jobs:
         with:
           path: artifacts
 
-      # Zips the folders up and attaches them to a new GitHub Release page
+      # Zips the folders up and attaches them to a new GitHub Release page[cite: 1]
       - name: Publish Release
         uses: softprops/action-gh-release@v2
         with:
           files: artifacts/**/*
-          generate_release_notes: true
+          generate_release_notes: true #[cite: 1]

@@ -32,7 +32,7 @@ export async function loadSample() {
       canChooseFiles: true,
       canChooseDirectory: false,
       allowsMultipleSelection: false,
-      allowedFileTypes: ['wav', 'mp3', 'ogg', 'aiff']
+      allowedFileTypes: "*"
     });
 
     let selectedPath = null;
