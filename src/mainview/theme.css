@@ -55,15 +55,15 @@
   --border-subtle: #e4e4e7;
 }
 
-body {
+html,body {
   background-color: var(--bg-main);
   color: var(--text-main);
   font-family: var(--font-sans);
   margin: 0;
   padding: 0;
   overflow: hidden;
-  width: 100vw;
-  height: 100vh;
+  width: 100%;
+  height: 100%;
 }
 
 /* --- GLOBAL UI COMPONENTS --- */

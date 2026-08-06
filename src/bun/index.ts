@@ -143,4 +143,24 @@ const mainWindow = new BrowserWindow({
   rpc: backendRPC // Mounts our defined IPC bridge to this specific window
 });
 
+// --- THE WINDOWS WEBVIEW2 NATIVE NUDGE ---
+// Forces the Windows Desktop Window Manager (DWM) to emit a native WM_SIZE event,
+// waking up the WebView2 engine and fixing the initial DPI/Chrome crop bug.
+if (process.platform === "win32") {
+  setTimeout(() => {
+    try {
+      // Nudge the window down by 1 pixel natively
+      mainWindow.setSize(980, 621);
+      
+      // Instantly snap it back to the original size
+      setTimeout(() => {
+        mainWindow.setSize(980, 620);
+      }, 50);
+    } catch (err) {
+      // Fallback in case Electrobun changes its native API method names in future versions
+      console.log("Native nudge failed:", err);
+    }
+  }, 250); // Wait 250ms to ensure the window has fully painted first
+}
+
 console.log("Sopita app started!");
